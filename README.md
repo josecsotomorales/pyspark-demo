@@ -1,4 +1,4 @@
-# PySpark Demo
+# PySpark Demo Scripts
 
 ## Install Spark
 Install Spark with Homebrew
