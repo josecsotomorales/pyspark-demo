@@ -20,7 +20,7 @@ log_of_songs = [
         "All the stars"
 ]
 
-# parallelize the log_of_songs to use with Spark
+# Parallelize the log_of_songs to use with Spark
 distributed_song_log = sc.parallelize(log_of_songs)
 
 

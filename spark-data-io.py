@@ -1,11 +1,14 @@
 # reading and writing data with spark
 # import SparkConf and SparkSession
+import findspark
+findspark.init()
+
 import pyspark
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
 
 # create the spark session
-spark = SparkSession.builder.appName("Python Spark").getOrCreate()
+spark = SparkSession.builder.appName("data-io").getOrCreate()
 
 # check the spark context
 spark_context = spark.sparkContext.getConf().getAll()
