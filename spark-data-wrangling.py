@@ -1,85 +1,56 @@
+# Helpful resources:
+# http://spark.apache.org/docs/latest/api/python/pyspark.sql.html
+
 import findspark
 findspark.init()
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType
-from pyspark.sql.types import IntegerType
-from pyspark.sql.functions import desc
-from pyspark.sql.functions import asc
+from pyspark.sql.functions import isnan, count, when, col, desc, udf, col, sort_array, asc, avg
 from pyspark.sql.functions import sum as Fsum
+from pyspark.sql.window import Window
+from pyspark.sql.types import IntegerType
 
-import datetime
-
-import numpy as np
-import pandas as pd
-
+# 1) import any other libraries you might need
+# 2) instantiate a Spark session 
+# 3) read in the data set located at the path "data/sparkify_log_small.json"
+# 4) answer the quiz questions 
 
 spark = SparkSession.builder.appName("data-wrangling").getOrCreate()
 
-# read the input file
+df = spark.read.json("data/sparkify_log_small.json")
 
-path = "data/sparkify_log_small.json"
-user_log = spark.read.json(path)
+# QUESTION 1 - Which page did user id "" (empty string) NOT visit?
+df.printSchema()
 
+# filter for users with blank user id
+blank_pages = df.filter(df.userId == '').select(col('page').alias('blank_pages')).dropDuplicates()
 
-# data explroation
+# get a list of possible pages that could be visited
+all_pages = df.select('page').dropDuplicates()
 
-user_log.printSchema()
+# find values in all_pages that are not in blank_pages
+# these are the pages that the blank user did not go to
+for row in set(all_pages.collect()) - set(blank_pages.collect()):
+    print(row.page)
 
-user_log.describe().show()
+# QUESTION 2 - What type of user does the empty string user id most likely refer to?
 
-user_log.describe("artist").show()
+# Perhaps it represents users who have not signed up yet or who are signed out and are about to log in.
 
-user_log.describe("sessionId").show()
+# QUESTION 3 - How many female users do we have in the data set?
+df.filter(df.gender == 'F').select('userId', 'gender').dropDuplicates().count()
 
-user_log.count()
+# QUESTION 4 - How many songs were played from the most played artist?
+df.filter(df.page == 'NextSong').select('Artist').groupBy('Artist').agg({'Artist':'count'}).withColumnRenamed('count(Artist)', 'Artistcount').sort(desc('Artistcount')).show(1)
 
-user_log.select("page").dropDuplicates().sort("page").show()
+# QUESTION 5 - How many songs do users listen to on average between visiting our home page? Please round your answer to the closest integer.
 
-user_log.select(["userId", "firstname", "page", "song"]).where(user_log.userId == "1046").collect()
+# filter out 0 sum and max sum to get more exact answer
 
+function = udf(lambda ishome : int(ishome == 'Home'), IntegerType())
 
-# calculating statistics per hour
+user_window = Window.partitionBy('userID').orderBy(desc('ts')).rangeBetween(Window.unboundedPreceding, 0)
 
-get_hour = udf(lambda x: datetime.datetime.fromtimestamp(x / 1000.0). hour)
+cusum = df.filter((df.page == 'NextSong') | (df.page == 'Home')).select('userID', 'page', 'ts').withColumn('homevisit', function(col('page'))).withColumn('period', Fsum('homevisit').over(user_window))
 
-user_log = user_log.withColumn("hour", get_hour(user_log.ts))
-
-user_log.head()
-
-songs_in_hour = user_log.filter(user_log.page == "NextSong").groupby(user_log.hour).count().orderBy(user_log.hour.cast("float"))
-
-songs_in_hour.show()
-
-user_log_valid = user_log.dropna(how = "any", subset = ["userId", "sessionId"])
-
-user_log_valid.count()
-
-user_log.select("userId").dropDuplicates().sort("userId").show()
-
-user_log_valid = user_log_valid.filter(user_log_valid["userId"] != "")
-
-user_log_valid.count()
-
-# users that downgrade 
-
-user_log_valid.filter("page = 'Submit Downgrade'").show()
-
-user_log.select(["userId", "firstname", "page", "level", "song"]).where(user_log.userId == "1138").collect()
-
-flag_downgrade_event = udf(lambda x: 1 if x == "Submit Downgrade" else 0, IntegerType())
-
-user_log_valid = user_log_valid.withColumn("downgraded", flag_downgrade_event("page"))
-
-user_log_valid.head()
-
-# window functions
-
-from pyspark.sql import Window
-
-windowval = Window.partitionBy("userId").orderBy(desc("ts")).rangeBetween(Window.unboundedPreceding, 0)
-
-user_log_valid = user_log_valid.withColumn("phase", Fsum("downgraded").over(windowval))
-
-user_log_valid.select(["userId", "firstname", "ts", "page", "level", "phase"]).where(user_log.userId == "1138").sort("ts").collect()
+cusum.filter((cusum.page == 'NextSong')).groupBy('userID', 'period').agg({'period':'count'}).agg({'count(period)':'avg'}).show()
