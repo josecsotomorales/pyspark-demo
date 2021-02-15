@@ -17,7 +17,7 @@ user_log.createOrReplaceTempView("log_table")
 
 user_log.printSchema()
 
-# Question 1 - Which page did user id "" (empty string) NOT visit?
+# QUESTION 1 - Which page did user id "" (empty string) NOT visit?
 
 spark.sql("""
     select distinct page from log_table group by page
@@ -26,7 +26,7 @@ spark.sql("""
 """).show()
 
 
-# Question 2 - Why might you prefer to use SQL over data frames? Why might you prefer data frames over SQL?
+# QUESTION 2 - Why might you prefer to use SQL over data frames? Why might you prefer data frames over SQL?
 # 
 # Both Spark SQL and Spark Data Frames are part of the Spark SQL library. Hence, they both use the Spark SQL Catalyst Optimizer to optimize queries. 
 # 
@@ -34,7 +34,7 @@ spark.sql("""
 # 
 # Spark data frames give you more control. You can break down your queries into smaller steps, which can make debugging easier. You can also [cache](https://unraveldata.com/to-cache-or-not-to-cache/) intermediate results or [repartition](https://hackernoon.com/managing-spark-partitions-with-coalesce-and-repartition-4050c57ad5c4) intermediate results.
 
-# Question 3 - How many female users do we have in the data set?
+# QUESTION 3 - How many female users do we have in the data set?
 
 spark.sql("""
     select count(distinct userid)             
@@ -43,7 +43,7 @@ spark.sql("""
 """).show()
 
 
-# Question 4 - How many songs were played from the most played artist?
+# QUESTION 4 - How many songs were played from the most played artist?
 
 # Here is one solution
 spark.sql("""
@@ -75,7 +75,7 @@ spark.sql("""
 """).show()
 
 
-# # Question 5 - How many songs do users listen to on average between visiting our home page? Please round your answer to the closest integer.
+# QUESTION 5 - How many songs do users listen to on average between visiting our home page? Please round your answer to the closest integer.
 
 # SELECT CASE WHEN 1 > 0 THEN 1 WHEN 2 > 0 THEN 2.0 ELSE 1.2 END;
 is_home = spark.sql("""
