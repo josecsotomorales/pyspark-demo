@@ -10,11 +10,6 @@ from pyspark.sql.functions import sum as Fsum
 from pyspark.sql.window import Window
 from pyspark.sql.types import IntegerType
 
-# 1) import any other libraries you might need
-# 2) instantiate a Spark session 
-# 3) read in the data set located at the path "data/sparkify_log_small.json"
-# 4) answer the quiz questions 
-
 spark = SparkSession.builder.appName("data-wrangling").getOrCreate()
 
 df = spark.read.json("data/sparkify_log_small.json")
